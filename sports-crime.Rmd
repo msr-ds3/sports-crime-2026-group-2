@@ -74,18 +74,70 @@ offenses_filtered <- batches_filtered %>%
   left_join(offenses) %>% 
   drop_na(year)
 
-# All the assault cases
-offenses_filtered %>% 
-  filter(grepl('assault', ucr_offense_code)) %>% 
-  select(ucr_offense_code) %>% 
-  unique()
+# All the assault and vandalism cases
+offenses_filtered <- offenses_filtered %>%
+ filter(grepl('assault|vandalism', ucr_offense_code))
+```
 
-# All the vandalism cases
-offenses_filtered %>% 
-  filter(grepl('vandalism', ucr_offense_code)) %>% 
-  select(ucr_offense_code) %>% 
-  unique()
+```{r}
+library(cfbfastR)
 
+espn <- c()
+years <- 2000:2005
 
+for (year in years) {
+  i = year %% 2000 + 1
+  espn[[i]] = espn_cfb_schedule(
+    year = year
+  )
+}
 
+names(espn) = c('2000', '2001', '2002', '2003', '2004', '2005')
+
+espn2 <- bind_rows(espn, .id='year')
+
+espn2 <- espn2 %>% 
+  mutate(
+    home_team_name = case_when(
+      home_team_id == "2711" ~ "Broncos2", # Boise and western michigan have the same team name so im replacing western michigan with Broncos2
+      TRUE ~ home_team_name
+    )
+  )
+```
+
+```{r}
+university_teams = tribble(
+  ~university, ~home_team_name,
+  'the university of akron', 'Zips',
+  'iowa state university', 'Cyclones',
+  'the university of michigan', 'Wolverines',
+  'ohio university', 'Bobcats', 
+  'the university of texas at austin', 'Longhorns',
+  'virginia polytechnic institute and state university', 'Hokies',
+  'boise state university', 'Broncos',
+  'clemson university', 'Tigers',
+  'united states air force academy', 'Falcons',
+  'the university of south carolina', 'Gamecocks',
+  'the ohio state university', 'Buckeyes',
+  'the university of north texas', 'Mean Green',
+  'michigan state university', 'Spartans',
+  'university of arkansas', 'Razorbacks',
+  'marshall university', 'Thundering Herd',
+  'the university of iowa', 'Hawkeyes',
+  'arkansas state university', 'Red Wolves', 
+  'western michigan university', 'Broncos2',
+  'the university of kansas', 'Jayhawks',
+  'utah state university', 'Aggies', 
+  'texas tech university', 'Red Raiders',
+  'west virginia university', 'Mountaineers',
+  'the university of idaho', 'Vandals',
+  'eastern michigan university', 'Eagles',
+  'middle tennessee state university', 'Blue Raiders',
+  'brigham young university', 'Cougars' 
+)
+
+offenses_filtered2 <- offenses_filtered %>% 
+  left_join(university_teams, by='university') %>% 
+  mutate(year=as.character(year)) %>%
+  inner_join(espn2)
 ```
