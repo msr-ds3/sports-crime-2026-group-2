@@ -1,1 +1,1 @@
-unzip batch_header_csv_1991_2024.zip
+unzip batch_header_csv_1991_2024.zip "*2000.csv" "*2001.csv" "*2002.csv" "*2003.csv" "*2004.csv" "*2005.csv"
