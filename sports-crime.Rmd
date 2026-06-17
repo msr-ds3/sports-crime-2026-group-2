@@ -1,6 +1,6 @@
 ---
 title: "Sports Crime 2026 Report"
-author: "Addina Rahaman and Alexie"
+author: "Addina Rahaman and Alexie DaCosta"
 date: '`r Sys.time()`'
 output:
   html_document:
@@ -15,6 +15,7 @@ output:
 library(here)
 library(scales)
 library(tidyverse)
+library(cfbfastR)
 ```
 
 ```{r}
@@ -24,17 +25,9 @@ batches <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>%
 ```
 
 ```{r}
-cities = c('akron', 'ames', 'ann arbor', 'athens', 'austin', 
-            'blacksburg', 'boise', 'clemson', 'colorado springs', 
-            'columbia', 'columbus', 'denton', 'east lansing', 
-            'fayetteville', 'huntington', 'iowa city', 'jonesboro',
-            'kalamazoo', 'lawrence', 'logan', 'lubbock', 'morgantown', 
-            'moscow', 'mount pleasant', 'murfreesboro', 'provo')
-
-batches_filtered <- batches %>% 
-  filter(city_name %in% cities)
-
-oris_per_university = tribble(
+# Updated variable name oris_per_university to university_ori_lookup
+# Link universities to police agencies using ORI and city
+university_ori_lookup <- tribble(
   ~university, ~city_name, ~ori,
   'the university of akron', 'akron', 'OH0772800',
   'iowa state university', 'ames', 'IA0850100',
@@ -64,28 +57,85 @@ oris_per_university = tribble(
   'brigham young university', 'provo', 'UT0250600'
 )
 
-batches_filtered <- oris_per_university %>% 
+# Replaced variable name oris_per_university with univesity_ori_lookup
+# Attach university identifiers to ORI (police agency) data
+batches_filtered <- university_ori_lookup %>% 
   left_join(batches_filtered, by=c('ori', 'city_name'))
 
 ```
 
 ```{r}
-offenses_filtered <- batches_filtered %>% 
-  left_join(offenses) %>% 
+# Attach offense descriptions and keep records with a valid year
+offenses_filtered <- batches_filtered %>%
+  left_join(offenses) %>%
   drop_na(year)
 
-# All the assault cases
-offenses_filtered %>% 
-  filter(grepl('assault', ucr_offense_code)) %>% 
-  select(ucr_offense_code) %>% 
-  unique()
+# Keep only assault and vandalism crime reports
+offenses_filtered <- offenses_filtered %>%
+  filter(grepl("assault|vandalism", ucr_offense_code, ignore.case = TRUE))
+```
 
-# All the vandalism cases
-offenses_filtered %>% 
-  filter(grepl('vandalism', ucr_offense_code)) %>% 
-  select(ucr_offense_code) %>% 
-  unique()
+```{r}
+# Download ESPN college football schedules for seasons 2000–2005
+game_schedule_raw <- c()
+years <- 2000:2005
+ 
+for (year in years) {
+  i = year %% 2000 + 1
+  game_schedule_raw[[i]] = espn_cfb_schedule(
+    year = year
+  )
+}
+
+names(game_schedule_raw) = c('2000', '2001', '2002', '2003', '2004', '2005')
+
+# Combine schedules from all years into a single table of football games
+game_schedule <- bind_rows(game_schedule_raw, .id='year')
 
 
+game_schedule <- game_schedule %>%  # Replaced variable name espn2 to game_schedule
+  mutate(
+    home_team_name = case_when(
+      home_team_id == "2711" ~ "Broncos2", # Boise and western michigan have the same team name so im replacing western michigan with Broncos2
+      TRUE ~ home_team_name
+    )
+  )
+```
 
+```{r}
+# Updated variable name university_teams to university_team_lookup
+university_team_lookup <- tribble(
+  ~university, ~team_name,
+  "the university of akron", "Zips",
+  "iowa state university", "Cyclones",
+  "the university of michigan", "Wolverines",
+  "ohio university", "Bobcats",
+  "the university of texas at austin", "Longhorns",
+  "virginia polytechnic institute and state university", "Hokies",
+  "boise state university", "Broncos",
+  "clemson university", "Tigers",
+  "united states air force academy", "Falcons",
+  "the university of south carolina", "Gamecocks",
+  "the ohio state university", "Buckeyes",
+  "the university of north texas", "Mean Green",
+  "michigan state university", "Spartans",
+  "university of arkansas", "Razorbacks",
+  "marshall university", "Thundering Herd",
+  "the university of iowa", "Hawkeyes",
+  "arkansas state university", "Red Wolves",
+  "western michigan university", "Broncos2",
+  "the university of kansas", "Jayhawks",
+  "utah state university", "Aggies",
+  "texas tech university", "Red Raiders",
+  "west virginia university", "Mountaineers",
+  "the university of idaho", "Vandals",
+  "eastern michigan university", "Eagles",
+  "middle tennessee state university", "Blue Raiders",
+  "brigham young university", "Cougars"
+)
+
+offenses_filtered2 <- offenses_filtered %>% 
+  left_join(university_team_lookup, by='university') %>%  # Updated variable name university_teams to university_team_lookup
+  mutate(year=as.character(year)) %>%
+  inner_join(game_schedule)
 ```
