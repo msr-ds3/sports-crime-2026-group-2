@@ -15,8 +15,7 @@ output:
 library(here)
 library(scales)
 library(tidyverse)
-library(rvest)
-library(xml2)
+library(cfbfastR)
 ```
 
 ```{r}
@@ -26,15 +25,6 @@ batches <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>%
 ```
 
 ```{r}
-# target_cities <- c('akron', 'ames', 'ann arbor', 'athens', 'austin', 
-#             'blacksburg', 'boise', 'clemson', 'colorado springs', 
-#             'columbia', 'columbus', 'denton', 'east lansing', 
-#             'fayetteville', 'huntington', 'iowa city', 'jonesboro',
-#             'kalamazoo', 'lawrence', 'logan', 'lubbock', 'morgantown', 
-#             'moscow', 'mount pleasant', 'murfreesboro', 'provo')
-
-# batches_filtered <- batches %>% 
-#   filter(city_name %in% target_cities)
 
 university_ori_lookup <- tribble(
   ~university, ~city_name, ~ori,
@@ -78,27 +68,25 @@ offenses_filtered <- batches_filtered %>%
 
 # All the assault and vandalism cases
 offenses_filtered <- offenses_filtered %>%
- filter(grepl('assault|vandalism', ucr_offense_code))
+ filter(grepl('assault|vandalism', ucr_offense_code, ignore.case=TRUE))
 ```
 
 ```{r}
-library(cfbfastR)
-
-espn <- c()
+game_schedule_raw <- c()
 years <- 2000:2005
 
 for (year in years) {
   i = year %% 2000 + 1
-  espn[[i]] = espn_cfb_schedule(
+  game_schedule_raw[[i]] = espn_cfb_schedule(
     year = year
   )
 }
 
-names(espn) = c('2000', '2001', '2002', '2003', '2004', '2005')
+names(game_schedule_raw) = c('2000', '2001', '2002', '2003', '2004', '2005')
 
-espn2 <- bind_rows(espn, .id='year')
+game_schedule <- bind_rows(game_schedule_raw, .id='year')
 
-espn2 <- espn2 %>% 
+game_schedule <- game_schedule %>% 
   mutate(
     home_team_name = case_when(
       home_team_id == "2711" ~ "Broncos2", # Boise and western michigan have the same team name so im replacing western michigan with Broncos2
