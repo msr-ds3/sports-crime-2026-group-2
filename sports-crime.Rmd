@@ -23,7 +23,7 @@ library(cfbfastR)
 
 ## Load Data
 ```{r}
-offenses <- read_csv(here('offense_segment.csv'))
+offenses <- read_csv(here('offense_segment.csv')) 
 batches <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>% 
   filter(grepl('200[0-5]', year))
 ```
@@ -64,7 +64,7 @@ university_ori_lookup <- tribble(
 )
 
 batches_filtered <- university_ori_lookup %>% 
-  left_join(batches_filtered, by=c('ori', 'city_name'))
+  left_join(batches, by=c('ori', 'city_name'))
 
 ```
 
