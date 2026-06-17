@@ -19,13 +19,13 @@ library(cfbfastR)
 ```
 
 ```{r}
+
 offenses <- read_csv(here('offense_segment.csv'))
 batches <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>% 
   filter(grepl('200[0-5]', year))
 ```
 
 ```{r}
-
 university_ori_lookup <- tribble(
   ~university, ~city_name, ~ori,
   'the university of akron', 'akron', 'OH0772800',
@@ -129,7 +129,93 @@ university_team_lookup <- tribble(
 offenses_filtered2 <- offenses_filtered %>% 
   left_join(university_team_lookup, by='university') %>% 
   mutate(year=as.character(year)) %>%
-  inner_join(espn2)
+  left_join(game_schedule)
+         
+# > names(offenses_filtered2)
+#   [1] "university"                       "city_name"                       
+#   [3] "ori"                              "year"                            
+#   [5] "state"                            "population"                      
+#   [7] "date_ori_was_added"               "date_ori_went_nibrs"             
+#   [9] "state_abbreviation"               "population_group"                
+#  [11] "country_division"                 "country_region"                  
+#  [13] "agency_indicator"                 "core_city"                       
+#  [15] "covered_by_ori"                   "fbi_field_office"                
+#  [17] "judicial_district"                "agency_nibrs_flag"               
+#  [19] "agency_inactive_date"             "current_population_1"            
+#  [21] "ucr_county_code_1"                "msa_code_1"                      
+#  [23] "last_population_1"                "current_population_2"            
+#  [25] "ucr_county_code_2"                "msa_code_2"                      
+#  [27] "last_population_2"                "current_population_3"            
+#  [29] "ucr_county_code_3"                "msa_code_3"                      
+#  [31] "last_population_3"                "current_population_4"            
+#  [33] "ucr_county_code_4"                "msa_code_4"                      
+#  [35] "last_population_4"                "current_population_5"            
+#  [37] "ucr_county_code_5"                "msa_code_5"                      
+#  [39] "last_population_5"                "x01_06_12_indicator"             
+#  [41] "number_of_months_reported"        "master_file_year"                
+#  [43] "january_zero_report_submitted"    "january_group_a_b_submitted"     
+#  [45] "january_window_record_submitted"  "february_zero_report_submitted"  
+#  [47] "february_group_a_b_submitted"     "february_window_record_submitted"
+#  [49] "march_zero_report_submitted"      "march_group_a_b_submitted"       
+#  [51] "march_window_record_submitted"    "april_zero_report_submitted"     
+#  [53] "april_group_a_b_submitted"        "april_window_record_submitted"   
+#  [55] "may_zero_report_submitted"        "may_group_a_b_submitted"         
+#  [57] "may_window_record_submitted"      "june_zero_report_submitted"      
+#  [59] "june_group_a_b_submitted"         "june_window_record_submitted"    
+#  [61] "july_zero_report_submitted"       "july_group_a_b_submitted"        
+#  [63] "july_window_record_submitted"     "august_zero_report_submitted"    
+#  [65] "august_group_a_b_submitted"       "august_window_record_submitted"  
+#  [67] "september_zero_report_submitted"  "september_group_a_b_submitted"   
+#  [69] "september_window_record_submitte" "october_zero_report_submitted"   
+#  [71] "october_group_a_b_submitted"      "october_window_record_submitted" 
+#  [73] "november_zero_report_submitted"   "november_group_a_b_submitted"    
+#  [75] "november_window_record_submitted" "december_zero_report_submitted"  
+#  [77] "december_group_a_b_submitted"     "december_window_record_submitted"
+#  [79] "fips_county_code_1"               "fips_county_code_2"              
+#  [81] "fips_county_code_3"               "fips_county_code_4"              
+#  [83] "fips_county_code_5"               "state_abb"                       
+#  [85] "incident_number"                  "incident_date"                   
+#  [87] "ucr_offense_code"                 "offense_attempted_or_completed"  
+#  [89] "offender_suspected_of_using_1"    "offender_suspected_of_using_2"   
+#  [91] "offender_suspected_of_using_3"    "location_type"                   
+#  [93] "number_of_premises_entered"       "method_of_entry"                 
+#  [95] "type_criminal_activity_1"         "type_criminal_activity_2"        
+#  [97] "type_criminal_activity_3"         "type_weapon_force_involved_1"    
+#  [99] "automatic_weapon_indicator_1"     "type_weapon_force_involved_2"    
+# [101] "automatic_weapon_indicator_2"     "type_weapon_force_involved_3"    
+# [103] "automatic_weapon_indicator_3"     "bias_motivation"                 
+# [105] "unique_incident_id"               "home_team_name"                  
+# [107] "matchup"                          "matchup_short"                   
+# [109] "season"                           "type"                            
+# [111] "slug"                             "game_id"                         
+# [113] "game_uid"                         "game_date"                       
+# [115] "attendance"                       "date_valid"                      
+# [117] "play_by_play_available"           "home_team_logo"                  
+# [119] "home_team_abb"                    "home_team_id"                    
+# [121] "home_team_location"               "home_team_full"                  
+# [123] "home_team_color"                  "home_score"                      
+# [125] "home_win"                         "home_record"                     
+# [127] "away_team_name"                   "away_team_logo"                  
+# [129] "away_team_abb"                    "away_team_id"                    
+# [131] "away_team_location"               "away_team_full"                  
+# [133] "away_team_color"                  "away_score"                      
+# [135] "away_win"                         "away_record"                     
+# [137] "status_name"                      "broadcasts"                      
+# [139] "start_date"                       "broadcast"                       
+# [141] "geo_broadcasts"                   "highlights"                      
+# [143] "game_date_time"                   "notes"                           
+# [145] "broadcast_market"                 "broadcast_name"                  
+# [147] "passing_leader_yards"             "passing_leader_stat"             
+# [149] "passing_leader_name"              "passing_leader_shortname"        
+# [151] "passing_leader_headshot"          "passing_leader_team_id"          
+# [153] "passing_leader_pos"               "rushing_leader_yards"            
+# [155] "rushing_leader_stat"              "rushing_leader_name"             
+# [157] "rushing_leader_shortname"         "rushing_leader_headshot"         
+# [159] "rushing_leader_team_id"           "rushing_leader_pos"              
+# [161] "receiving_leader_yards"           "receiving_leader_stat"           
+# [163] "receiving_leader_name"            "receiving_leader_shortname"      
+# [165] "receiving_leader_headshot"        "receiving_leader_team_id"        
+# [167] "receiving_leader_pos"    
 ```
 
 ```{r}
@@ -137,5 +223,17 @@ offenses_filtered2 <- offenses_filtered %>%
 offenses_filtered2 %>% 
   select(ori, home_team_name, university) %>%
   unique()
+
+# create a column that classifies by no game, home game, and away game
+agency_days <- offenses_filtered %>% 
+  filter((grepl('^200[0-5]-', incident_date))) %>%
+  group_by(ori, incident_date) %>% 
+  summarize(
+    number_of_offenses=n()
+  )
+
+game_schedule_filtered <- game_schedule %>% 
+  select(year, matchup, season, )
+
 ```
 
