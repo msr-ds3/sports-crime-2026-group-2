@@ -11,6 +11,9 @@ output:
     toc_depth: 3
 ---
 
+# Replication
+
+## Load Packages
 ```{r setup, include=FALSE}
 library(here)
 library(scales)
@@ -18,13 +21,17 @@ library(tidyverse)
 library(cfbfastR)
 ```
 
+## Load Data
 ```{r}
-
 offenses <- read_csv(here('offense_segment.csv'))
 batches <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>% 
   filter(grepl('200[0-5]', year))
 ```
 
+## Organize and join
+
+### Offenses Data
+Filter and organize offenses within the programs of interest and only Group A offenses (assaults, vandalism)
 ```{r}
 university_ori_lookup <- tribble(
   ~university, ~city_name, ~ori,
@@ -71,6 +78,8 @@ offenses_filtered <- offenses_filtered %>%
  filter(grepl('assault|vandalism', ucr_offense_code, ignore.case=TRUE))
 ```
 
+### Game Schedule Data
+Get the game schedules for 2000-2005
 ```{r}
 game_schedule_raw <- c()
 years <- 2000:2005
@@ -95,9 +104,11 @@ game_schedule <- game_schedule %>%
   )
 ```
 
+### Join and Aggregate
+Join offenses data and schedule data and aggregate to get the number of offenses per agency day, and respective game/team information
 ```{r}
 university_team_lookup <- tribble(
-  ~university, ~home_team_name,
+  ~university, ~team_name,
   'the university of akron', 'Zips',
   'iowa state university', 'Cyclones',
   'the university of michigan', 'Wolverines',
@@ -126,114 +137,646 @@ university_team_lookup <- tribble(
   'brigham young university', 'Cougars' 
 )
 
-offenses_filtered2 <- offenses_filtered %>% 
-  left_join(university_team_lookup, by='university') %>% 
-  mutate(year=as.character(year)) %>%
-  left_join(game_schedule)
-         
-# > names(offenses_filtered2)
-#   [1] "university"                       "city_name"                       
-#   [3] "ori"                              "year"                            
-#   [5] "state"                            "population"                      
-#   [7] "date_ori_was_added"               "date_ori_went_nibrs"             
-#   [9] "state_abbreviation"               "population_group"                
-#  [11] "country_division"                 "country_region"                  
-#  [13] "agency_indicator"                 "core_city"                       
-#  [15] "covered_by_ori"                   "fbi_field_office"                
-#  [17] "judicial_district"                "agency_nibrs_flag"               
-#  [19] "agency_inactive_date"             "current_population_1"            
-#  [21] "ucr_county_code_1"                "msa_code_1"                      
-#  [23] "last_population_1"                "current_population_2"            
-#  [25] "ucr_county_code_2"                "msa_code_2"                      
-#  [27] "last_population_2"                "current_population_3"            
-#  [29] "ucr_county_code_3"                "msa_code_3"                      
-#  [31] "last_population_3"                "current_population_4"            
-#  [33] "ucr_county_code_4"                "msa_code_4"                      
-#  [35] "last_population_4"                "current_population_5"            
-#  [37] "ucr_county_code_5"                "msa_code_5"                      
-#  [39] "last_population_5"                "x01_06_12_indicator"             
-#  [41] "number_of_months_reported"        "master_file_year"                
-#  [43] "january_zero_report_submitted"    "january_group_a_b_submitted"     
-#  [45] "january_window_record_submitted"  "february_zero_report_submitted"  
-#  [47] "february_group_a_b_submitted"     "february_window_record_submitted"
-#  [49] "march_zero_report_submitted"      "march_group_a_b_submitted"       
-#  [51] "march_window_record_submitted"    "april_zero_report_submitted"     
-#  [53] "april_group_a_b_submitted"        "april_window_record_submitted"   
-#  [55] "may_zero_report_submitted"        "may_group_a_b_submitted"         
-#  [57] "may_window_record_submitted"      "june_zero_report_submitted"      
-#  [59] "june_group_a_b_submitted"         "june_window_record_submitted"    
-#  [61] "july_zero_report_submitted"       "july_group_a_b_submitted"        
-#  [63] "july_window_record_submitted"     "august_zero_report_submitted"    
-#  [65] "august_group_a_b_submitted"       "august_window_record_submitted"  
-#  [67] "september_zero_report_submitted"  "september_group_a_b_submitted"   
-#  [69] "september_window_record_submitte" "october_zero_report_submitted"   
-#  [71] "october_group_a_b_submitted"      "october_window_record_submitted" 
-#  [73] "november_zero_report_submitted"   "november_group_a_b_submitted"    
-#  [75] "november_window_record_submitted" "december_zero_report_submitted"  
-#  [77] "december_group_a_b_submitted"     "december_window_record_submitted"
-#  [79] "fips_county_code_1"               "fips_county_code_2"              
-#  [81] "fips_county_code_3"               "fips_county_code_4"              
-#  [83] "fips_county_code_5"               "state_abb"                       
-#  [85] "incident_number"                  "incident_date"                   
-#  [87] "ucr_offense_code"                 "offense_attempted_or_completed"  
-#  [89] "offender_suspected_of_using_1"    "offender_suspected_of_using_2"   
-#  [91] "offender_suspected_of_using_3"    "location_type"                   
-#  [93] "number_of_premises_entered"       "method_of_entry"                 
-#  [95] "type_criminal_activity_1"         "type_criminal_activity_2"        
-#  [97] "type_criminal_activity_3"         "type_weapon_force_involved_1"    
-#  [99] "automatic_weapon_indicator_1"     "type_weapon_force_involved_2"    
-# [101] "automatic_weapon_indicator_2"     "type_weapon_force_involved_3"    
-# [103] "automatic_weapon_indicator_3"     "bias_motivation"                 
-# [105] "unique_incident_id"               "home_team_name"                  
-# [107] "matchup"                          "matchup_short"                   
-# [109] "season"                           "type"                            
-# [111] "slug"                             "game_id"                         
-# [113] "game_uid"                         "game_date"                       
-# [115] "attendance"                       "date_valid"                      
-# [117] "play_by_play_available"           "home_team_logo"                  
-# [119] "home_team_abb"                    "home_team_id"                    
-# [121] "home_team_location"               "home_team_full"                  
-# [123] "home_team_color"                  "home_score"                      
-# [125] "home_win"                         "home_record"                     
-# [127] "away_team_name"                   "away_team_logo"                  
-# [129] "away_team_abb"                    "away_team_id"                    
-# [131] "away_team_location"               "away_team_full"                  
-# [133] "away_team_color"                  "away_score"                      
-# [135] "away_win"                         "away_record"                     
-# [137] "status_name"                      "broadcasts"                      
-# [139] "start_date"                       "broadcast"                       
-# [141] "geo_broadcasts"                   "highlights"                      
-# [143] "game_date_time"                   "notes"                           
-# [145] "broadcast_market"                 "broadcast_name"                  
-# [147] "passing_leader_yards"             "passing_leader_stat"             
-# [149] "passing_leader_name"              "passing_leader_shortname"        
-# [151] "passing_leader_headshot"          "passing_leader_team_id"          
-# [153] "passing_leader_pos"               "rushing_leader_yards"            
-# [155] "rushing_leader_stat"              "rushing_leader_name"             
-# [157] "rushing_leader_shortname"         "rushing_leader_headshot"         
-# [159] "rushing_leader_team_id"           "rushing_leader_pos"              
-# [161] "receiving_leader_yards"           "receiving_leader_stat"           
-# [163] "receiving_leader_name"            "receiving_leader_shortname"      
-# [165] "receiving_leader_headshot"        "receiving_leader_team_id"        
-# [167] "receiving_leader_pos"    
-```
-
-```{r}
-# just a way to view the ori, university, and home_team_name mappings
-offenses_filtered2 %>% 
-  select(ori, home_team_name, university) %>%
-  unique()
+# create a column
+offenses_filtered <- offenses_filtered %>% 
+  mutate(
+    offense_type = case_when(
+      (grepl('assault', ucr_offense_code)) ~ 'assault',
+      (grepl('vandalism', ucr_offense_code)) ~ 'vandalism'
+    )
+  )
 
 # create a column that classifies by no game, home game, and away game
 agency_days <- offenses_filtered %>% 
   filter((grepl('^200[0-5]-', incident_date))) %>%
-  group_by(ori, incident_date) %>% 
+  group_by(university, ori, incident_date, offense_type) %>%
   summarize(
     number_of_offenses=n()
   )
 
 game_schedule_filtered <- game_schedule %>% 
-  select(year, matchup, season, )
+  select(year, matchup, season, game_date, home_team_name, away_team_name)
+
+agency_days_and_programs <- agency_days %>% 
+  left_join(university_team_lookup)
+
+agency_offenses_and_games <- agency_days_and_programs %>% 
+  left_join(game_schedule_filtered, by=c('incident_date' = 'game_date')) %>% 
+  mutate(
+    game_type = case_when(
+      (team_name == home_team_name) ~ 'home_game',
+      (team_name == away_team_name) ~ 'away_game',
+      TRUE ~ 'No game' # since we joined only by incident date and game date, it could be possible that neither home_team_name or away_team_name corresponds with team_name. in that case, the team was not involved at all
+    )
+  ) %>% 
+  group_by(ori, incident_date, offense_type, number_of_offenses) %>% 
+  summarize(
+    actual_game_type = if (any(game_type == 'home_game')) { 'home_game' } 
+                      else if (any(game_type == 'away_game')) { 'away_game' }
+                      else { 'no_game' }
+  ) %>% 
+  rename(game_type=actual_game_type)
+```
+
+## Plotting 
+
+### Appendix Table 1
+Statistics on assaults per agency day on (1) all days (2) when there are no games (3) when there are home games, and (4) when there are away games
+```{r}
+# appendix 1 
+appendix_one_game <- agency_offenses_and_games %>% 
+  group_by(game_type, offense_type) %>% 
+  summarize(
+    quantile_0.25 = quantile(number_of_offenses, 0.25, na.rm=TRUE),
+    quantile_0.50 = quantile(number_of_offenses, 0.50, na.rm=TRUE),
+    quantile_0.75 = quantile(number_of_offenses, 0.75, na.rm=TRUE),
+    quantile_0.90 = quantile(number_of_offenses, 0.90, na.rm=TRUE),
+    sd = sd(number_of_offenses), 
+    avg = mean(number_of_offenses),
+    .groups = 'drop'
+  ) 
+
+appendix_one_all_day <- agency_offenses_and_games %>% 
+  group_by(offense_type) %>% 
+  summarize(
+    quantile_0.25 = quantile(number_of_offenses, 0.25, na.rm=TRUE),
+    quantile_0.50 = quantile(number_of_offenses, 0.50, na.rm=TRUE),
+    quantile_0.75 = quantile(number_of_offenses, 0.75, na.rm=TRUE),
+    quantile_0.90 = quantile(number_of_offenses, 0.90, na.rm=TRUE),
+    sd = sd(number_of_offenses), 
+    avg = mean(number_of_offenses),
+    .groups = 'drop'
+  ) %>% 
+  mutate(game_type = 'all_days')
+
+appendix_one <- bind_rows(appendix_one_game, appendix_one_all_day)
+
+appendix_one %>% 
+  ggplot(aes(x=game_type, y=avg, ymin=avg-sd, ymax=avg+sd)) +
+  geom_pointrange() + 
+  geom_errorbar() + 
+  facet_wrap(~ offense_type)
+```
+
+### Table 2 
+Plot the distribution of games and observed offenses by day of week
+```{r}
+# table 2 (distribution of games by day of week)
+
+agency_offenses_and_games_by_day <- agency_offenses_and_games %>%
+  mutate(day_of_week = weekdays(incident_date))
+ 
+table2_obs <- agency_offenses_and_games_by_day  %>%
+  group_by(day_of_week) %>%
+  summarize(num_observations = sum(number_of_offenses))
+
+table2_games <- game_schedule_filtered %>% 
+  filter(home_team_name %in% university_team_lookup$team_name | away_team_name %in% university_team_lookup$team_name) %>% 
+  mutate(day_of_week = weekdays(game_date)) %>% 
+  group_by(day_of_week) %>% 
+  summarize(num_games = n())
+ 
+table2 <- inner_join(table2_games, table2_obs, by='day_of_week')
+
+total <- table2 %>% 
+  summarize(
+    total_games = sum(num_games), 
+    total_observations = sum(num_observations)
+  ) %>% 
+  mutate(day_of_week='Total') %>% 
+  rename(num_games=total_games, num_observations=total_observations)
+
+table2 <- bind_rows(table2, total)
+
+table2 %>% 
+  pivot_longer(
+    cols=starts_with('num_'),
+    names_to='type',
+    values_to='stat'
+  ) %>%
+  ggplot(aes(x=day_of_week, y=stat)) +
+  geom_bar(stat = 'identity') + 
+  facet_wrap(~ type, scales='free')
 
 ```
 
+### Descriptive Figure - Saturdays
+Mean and standard error of number of offenses on Saturday (overall).
+```{r}
+# saturday plot
+agency_offenses_and_games %>% 
+  mutate(day_of_week=weekdays(incident_date)) %>%
+  filter(day_of_week=='Saturday') %>%
+  group_by(game_type, offense_type) %>% 
+  summarize(
+    count = n(),
+    avg=mean(number_of_offenses),
+    se=sd(number_of_offenses) / sqrt(count)
+  ) %>% 
+  ggplot(aes(x = game_type, y=avg, ymin=avg-se, ymax=avg+se)) +
+  geom_pointrange() +
+  geom_errorbar() + 
+  labs(
+    x = 'Game Type',
+    y = 'Number of Offense Reports',
+    title = 'Saturday Offense by Agency Days',
+  ) +
+  facet_wrap(~ offense_type)
+```
+
+### Descriptive Figure - Per team
+Mean and standard error of offenses on Saturday (each university).
+```{r}
+# per team plots
+
+# both offense types in one graph (cramped)
+agency_offenses_and_games %>% 
+  mutate(day_of_week=weekdays(incident_date)) %>%
+  filter(day_of_week=='Saturday') %>%
+  left_join(university_ori_lookup) %>% 
+  group_by(university, game_type, offense_type) %>% 
+  summarize(
+    count = n(),
+    avg=mean(number_of_offenses),
+    se=sd(number_of_offenses) / sqrt(count)
+  ) %>% 
+  ggplot(aes(x = game_type, y=avg, ymin=avg-se, ymax=avg+se, color=offense_type)) +
+  geom_pointrange() +
+  geom_errorbar() +
+  facet_wrap(~ university) + 
+  labs(
+    x = 'Game Type',
+    y = 'Number of Offense Reports',
+    title = 'Saturday Offense by Agency Days',
+    color = 'Offense Type'
+  )
+
+# only assault reports per uni
+agency_offenses_and_games %>% 
+  mutate(day_of_week=weekdays(incident_date)) %>%
+  filter(day_of_week=='Saturday', offense_type=='assault') %>%
+  left_join(university_ori_lookup) %>% 
+  group_by(university, game_type) %>% 
+  summarize(
+    count = n(),
+    avg=mean(number_of_offenses),
+    se=sd(number_of_offenses) / sqrt(count)
+  ) %>% 
+  ggplot(aes(x = game_type, y=avg, ymin=avg-se, ymax=avg+se)) +
+  geom_pointrange() +
+  geom_errorbar() +
+  facet_wrap(~ university) + 
+  labs(
+    x = 'Game Type',
+    y = 'Number of Assault Reports',
+    title = 'Saturday Assaults by Agency Days'
+  )
+
+# only vandalism reports per uni
+agency_offenses_and_games %>% 
+  mutate(day_of_week=weekdays(incident_date)) %>%
+  filter(day_of_week=='Saturday', offense_type=='vandalism') %>%
+  left_join(university_ori_lookup) %>% 
+  group_by(university, game_type) %>% 
+  summarize(
+    count = n(),
+    avg=mean(number_of_offenses),
+    se=sd(number_of_offenses) / sqrt(count)
+  ) %>% 
+  ggplot(aes(x = game_type, y=avg, ymin=avg-se, ymax=avg+se)) +
+  geom_pointrange() +
+  geom_errorbar() +
+  facet_wrap(~ university) + 
+  labs(
+    x = 'Game Type',
+    y = 'Number of Vandalism Reports',
+    title = 'Saturday Vandalisms by Agency Days'
+  )
+
+
+```
+
+## Regression - Table 3
+
+### Re-organizing data
+```{r}
+# psuedo code: lm(daily_offense_count ~ home_game + away_game + agency_FE)
+library(MASS)
+ 
+# Hot Encode Game Type
+factors <- model.matrix(~ game_type - 1, data = agency_offenses_and_games)
+colnames(factors) <- sub("^game_type", "", colnames(factors))
+ 
+# Horizontally stack data back to df
+model_data <- bind_cols(agency_offenses_and_games, factors)
+ 
+# Add features
+model_data <- model_data %>%
+mutate(
+  day_of_week = wday(incident_date),
+  month = month(incident_date),
+  year = year(incident_date)
+)
+```
+
+### Model Outputs
+We did both linear regression models and negative binomial models. We ran 
+each type of model on (1) both offense types combined (2) only assault offense types
+(3) only vandalism offense types. For each, we also computed the % increases compared
+to no game respective to the offense type and model type. 
+
+```{r}
+
+# Overall Model - Linear Regression
+mod <- lm(number_of_offenses ~ home_game + away_game + as.factor(ori) + as.factor(day_of_week) + as.factor(month) + as.factor(year),
+data = model_data)
+ 
+summary(mod)
+
+# Residuals:
+#     Min      1Q  Median      3Q     Max 
+# -11.931  -1.471  -0.336   1.060  71.995 
+
+# Coefficients:
+#                          Estimate Std. Error  t value Pr(>|t|)    
+# (Intercept)              12.92874    0.08597  150.388  < 2e-16 ***
+# home_game                 0.45361    0.13630    3.328 0.000875 ***
+# away_game                 0.25534    0.17265    1.479 0.139158    
+# as.factor(ori)IA0850100 -10.84398    0.07644 -141.859  < 2e-16 ***
+# as.factor(ori)ID0010100  -5.86643    0.06700  -87.554  < 2e-16 ***
+# as.factor(ori)ID0290500 -11.65599    0.09602 -121.389  < 2e-16 ***
+# as.factor(ori)KS0230100  -8.76460    0.07579 -115.640  < 2e-16 ***
+# as.factor(ori)MI3336400 -11.03447    0.07569 -145.781  < 2e-16 ***
+# as.factor(ori)MI3759900 -11.40066    0.08162 -139.684  < 2e-16 ***
+# as.factor(ori)MI3949900  -6.83943    0.06781 -100.862  < 2e-16 ***
+# as.factor(ori)OH0050100 -11.55504    0.13401  -86.222  < 2e-16 ***
+# as.factor(ori)TN0750100  -8.48589    0.06770 -125.348  < 2e-16 ***
+# as.factor(ori)UT0250600 -10.26080    0.06916 -148.357  < 2e-16 ***
+# as.factor(ori)VA0600100 -11.24474    0.07923 -141.927  < 2e-16 ***
+# as.factor(ori)WV0060200  -9.57592    0.06935 -138.086  < 2e-16 ***
+# as.factor(ori)WV0310100 -10.80968    0.07652 -141.275  < 2e-16 ***
+# as.factor(day_of_week)2  -0.66839    0.05666  -11.797  < 2e-16 ***
+# as.factor(day_of_week)3  -0.73817    0.05707  -12.933  < 2e-16 ***
+# as.factor(day_of_week)4  -0.71716    0.05672  -12.644  < 2e-16 ***
+# as.factor(day_of_week)5  -0.61059    0.05644  -10.819  < 2e-16 ***
+# as.factor(day_of_week)6   0.15254    0.05555    2.746 0.006037 ** 
+# as.factor(day_of_week)7   0.53880    0.05700    9.452  < 2e-16 ***
+# as.factor(month)2        -0.12959    0.07630   -1.698 0.089438 .  
+# as.factor(month)3         0.38760    0.07444    5.207 1.93e-07 ***
+# as.factor(month)4         0.60160    0.07399    8.130 4.40e-16 ***
+# as.factor(month)5         0.69462    0.07423    9.357  < 2e-16 ***
+# as.factor(month)6         0.71714    0.07481    9.586  < 2e-16 ***
+# as.factor(month)7         0.90380    0.07384   12.239  < 2e-16 ***
+# as.factor(month)8         0.61895    0.07405    8.358  < 2e-16 ***
+# as.factor(month)9         0.66123    0.07549    8.759  < 2e-16 ***
+# as.factor(month)10        0.67811    0.07488    9.056  < 2e-16 ***
+# as.factor(month)11        0.38091    0.07549    5.046 4.53e-07 ***
+# as.factor(month)12       -0.07610    0.07650   -0.995 0.319825    
+# as.factor(year)2001      -0.09660    0.05489   -1.760 0.078448 .  
+# as.factor(year)2002      -0.08470    0.05381   -1.574 0.115436    
+# as.factor(year)2003      -0.09984    0.05421   -1.842 0.065538 .  
+# as.factor(year)2004      -0.18462    0.05375   -3.435 0.000593 ***
+# as.factor(year)2005      -0.18242    0.05361   -3.402 0.000668 ***
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Residual standard error: 3.133 on 42645 degrees of freedom
+# Multiple R-squared:  0.5387,    Adjusted R-squared:  0.5383 
+# F-statistic:  1346 on 37 and 42645 DF,  p-value: < 2.2e-16
+
+ 
+(exp(coef(mod)[2]) - 1) * 100
+# home_game 
+#  57.39865
+ 
+# Overall Model - Negative Binomial Regression
+mod2 <- glm.nb(number_of_offenses ~ home_game + away_game + as.factor(ori) + as.factor(day_of_week) + as.factor(month) + as.factor(year),
+data = model_data)
+ 
+summary(mod2)
+
+# Coefficients:
+#                          Estimate Std. Error  z value Pr(>|z|)    
+# (Intercept)              2.541719   0.014979  169.680  < 2e-16 ***
+# home_game                0.095007   0.024688    3.848 0.000119 ***
+# away_game                0.038565   0.030628    1.259 0.207977    
+# as.factor(ori)IA0850100 -1.782776   0.015577 -114.453  < 2e-16 ***
+# as.factor(ori)ID0010100 -0.598096   0.009732  -61.457  < 2e-16 ***
+# as.factor(ori)ID0290500 -2.239320   0.024874  -90.026  < 2e-16 ***
+# as.factor(ori)KS0230100 -1.122571   0.012639  -88.817  < 2e-16 ***
+# as.factor(ori)MI3336400 -1.867027   0.015802 -118.149  < 2e-16 ***
+# as.factor(ori)MI3759900 -2.085202   0.019032 -109.560  < 2e-16 ***
+# as.factor(ori)MI3949900 -0.743169   0.010130  -73.360  < 2e-16 ***
+# as.factor(ori)OH0050100 -2.182903   0.035455  -61.569  < 2e-16 ***
+# as.factor(ori)TN0750100 -1.054498   0.010787  -97.756  < 2e-16 ***
+# as.factor(ori)UT0250600 -1.550992   0.012631 -122.794  < 2e-16 ***
+# as.factor(ori)VA0600100 -1.967833   0.017398 -113.107  < 2e-16 ***
+# as.factor(ori)WV0060200 -1.328761   0.011904 -111.625  < 2e-16 ***
+# as.factor(ori)WV0310100 -1.757706   0.015428 -113.928  < 2e-16 ***
+# as.factor(day_of_week)2 -0.148590   0.010679  -13.914  < 2e-16 ***
+# as.factor(day_of_week)3 -0.165973   0.010763  -15.421  < 2e-16 ***
+# as.factor(day_of_week)4 -0.163948   0.010715  -15.301  < 2e-16 ***
+# as.factor(day_of_week)5 -0.136754   0.010635  -12.859  < 2e-16 ***
+# as.factor(day_of_week)6  0.015436   0.010263    1.504 0.132569    
+# as.factor(day_of_week)7  0.092602   0.010418    8.888  < 2e-16 ***
+# as.factor(month)2       -0.026370   0.014824   -1.779 0.075269 .  
+# as.factor(month)3        0.092865   0.014165    6.556 5.52e-11 ***
+# as.factor(month)4        0.133105   0.014069    9.461  < 2e-16 ***
+# as.factor(month)5        0.140161   0.014048    9.977  < 2e-16 ***
+# as.factor(month)6        0.138615   0.014123    9.815  < 2e-16 ***
+# as.factor(month)7        0.178595   0.013876   12.871  < 2e-16 ***
+# as.factor(month)8        0.123079   0.014052    8.759  < 2e-16 ***
+# as.factor(month)9        0.145768   0.014338   10.166  < 2e-16 ***
+# as.factor(month)10       0.149392   0.014190   10.528  < 2e-16 ***
+# as.factor(month)11       0.092026   0.014402    6.390 1.66e-10 ***
+# as.factor(month)12      -0.014071   0.014732   -0.955 0.339497    
+# as.factor(year)2001     -0.019395   0.010217   -1.898 0.057658 .  
+# as.factor(year)2002     -0.008020   0.010015   -0.801 0.423226    
+# as.factor(year)2003     -0.010210   0.010096   -1.011 0.311880    
+# as.factor(year)2004     -0.026491   0.010030   -2.641 0.008261 ** 
+# as.factor(year)2005     -0.019553   0.010008   -1.954 0.050723 .  
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# (Dispersion parameter for Negative Binomial(10.2628) family taken to be 1)
+
+#     Null deviance: 96362  on 42682  degrees of freedom
+# Residual deviance: 36748  on 42645  degrees of freedom
+# AIC: 181900
+
+# Number of Fisher Scoring iterations: 1
+
+
+#               Theta:  10.263 
+#           Std. Err.:  0.206 
+
+#  2 x log-likelihood:  -181822.043 
+ 
+( exp(coef(mod2)[2]) - 1 ) * 100
+# home_game 
+#  9.966657 
+ 
+# Filter Offense Type to Assault
+model_data_assault <- model_data %>%
+filter(offense_type == 'assault')
+ 
+# Filter Offense Type to Vandalism
+model_data_vandalism <- model_data %>%
+filter(offense_type == 'vandalism')
+ 
+# Linear Regression by Assault
+mod_a <- lm(number_of_offenses ~ home_game + away_game + as.factor(ori) + as.factor(day_of_week) + as.factor(month) + as.factor(year),
+data = model_data_assault)
+ 
+summary(mod_a)
+
+# Residuals:
+#     Min      1Q  Median      3Q     Max 
+# -8.5186 -1.2404 -0.2230  0.9771 19.9941 
+
+# Coefficients:
+#                         Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)              9.67956    0.08979 107.808  < 2e-16 ***
+# home_game               -0.04543    0.14262  -0.319 0.750086    
+# away_game                0.13552    0.18094   0.749 0.453893    
+# as.factor(ori)IA0850100 -8.10443    0.08607 -94.166  < 2e-16 ***
+# as.factor(ori)ID0010100 -2.11973    0.06860 -30.901  < 2e-16 ***
+# as.factor(ori)ID0290500 -8.40326    0.11448 -73.405  < 2e-16 ***
+# as.factor(ori)KS0230100 -6.07651    0.07809 -77.811  < 2e-16 ***
+# as.factor(ori)MI3336400 -7.90927    0.07998 -98.886  < 2e-16 ***
+# as.factor(ori)MI3759900 -8.11230    0.08539 -94.999  < 2e-16 ***
+# as.factor(ori)MI3949900 -1.85878    0.06920 -26.861  < 2e-16 ***
+# as.factor(ori)OH0050100 -8.24931    0.14697 -56.130  < 2e-16 ***
+# as.factor(ori)TN0750100 -3.94907    0.06869 -57.495  < 2e-16 ***
+# as.factor(ori)UT0250600 -6.97765    0.07104 -98.224  < 2e-16 ***
+# as.factor(ori)VA0600100 -8.05450    0.08450 -95.321  < 2e-16 ***
+# as.factor(ori)WV0060200 -6.15318    0.07074 -86.986  < 2e-16 ***
+# as.factor(ori)WV0310100 -8.02002    0.08454 -94.864  < 2e-16 ***
+# as.factor(day_of_week)2 -0.93311    0.05994 -15.568  < 2e-16 ***
+# as.factor(day_of_week)3 -0.83493    0.05995 -13.927  < 2e-16 ***
+# as.factor(day_of_week)4 -0.82368    0.05972 -13.793  < 2e-16 ***
+# as.factor(day_of_week)5 -0.68567    0.05938 -11.548  < 2e-16 ***
+# as.factor(day_of_week)6 -0.41762    0.05844  -7.146 9.23e-13 ***
+# as.factor(day_of_week)7  0.27968    0.05990   4.669 3.05e-06 ***
+# as.factor(month)2       -0.16836    0.07977  -2.110 0.034828 *  
+# as.factor(month)3        0.25783    0.07820   3.297 0.000978 ***
+# as.factor(month)4        0.46584    0.07798   5.974 2.35e-09 ***
+# as.factor(month)5        0.56920    0.07802   7.295 3.09e-13 ***
+# as.factor(month)6        0.47248    0.07871   6.002 1.98e-09 ***
+# as.factor(month)7        0.65070    0.07786   8.357  < 2e-16 ***
+# as.factor(month)8        0.46351    0.07768   5.967 2.46e-09 ***
+# as.factor(month)9        0.59941    0.07950   7.539 4.93e-14 ***
+# as.factor(month)10       0.40058    0.07888   5.078 3.85e-07 ***
+# as.factor(month)11       0.07063    0.07977   0.885 0.375944    
+# as.factor(month)12      -0.16285    0.08062  -2.020 0.043409 *  
+# as.factor(year)2001      0.04331    0.05770   0.751 0.452926    
+# as.factor(year)2002      0.10553    0.05668   1.862 0.062630 .  
+# as.factor(year)2003     -0.12564    0.05729  -2.193 0.028312 *  
+# as.factor(year)2004      0.01200    0.05647   0.213 0.831698    
+# as.factor(year)2005      0.04724    0.05648   0.836 0.402951    
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Residual standard error: 2.269 on 20143 degrees of freedom
+# Multiple R-squared:  0.6204,    Adjusted R-squared:  0.6197 
+# F-statistic: 889.9 on 37 and 20143 DF,  p-value: < 2.2e-16
+ 
+( exp(coef(mod_a)[2]) - 1 ) * 100
+# home_game 
+# -4.441273 
+ 
+# Negative Binomial Regression by Assault
+mod_a2 <- glm.nb(number_of_offenses ~ home_game + away_game + as.factor(ori) + as.factor(day_of_week) + as.factor(month) + as.factor(year),
+data = model_data_assault)
+ 
+summary(mod_a2)
+
+# Coefficients:
+#                          Estimate Std. Error z value Pr(>|z|)    
+# (Intercept)              2.282613   0.017888 127.607  < 2e-16 ***
+# home_game                0.013290   0.030918   0.430  0.66730    
+# away_game                0.024647   0.036838   0.669  0.50347    
+# as.factor(ori)IA0850100 -1.865694   0.026820 -69.563  < 2e-16 ***
+# as.factor(ori)ID0010100 -0.251738   0.011057 -22.767  < 2e-16 ***
+# as.factor(ori)ID0290500 -2.107846   0.043160 -48.838  < 2e-16 ***
+# as.factor(ori)KS0230100 -1.017123   0.016538 -61.503  < 2e-16 ***
+# as.factor(ori)MI3336400 -1.754868   0.023137 -75.846  < 2e-16 ***
+# as.factor(ori)MI3759900 -1.910477   0.027325 -69.917  < 2e-16 ***
+# as.factor(ori)MI3949900 -0.217696   0.011066 -19.672  < 2e-16 ***
+# as.factor(ori)OH0050100 -1.954783   0.052461 -37.262  < 2e-16 ***
+# as.factor(ori)TN0750100 -0.536035   0.011963 -44.808  < 2e-16 ***
+# as.factor(ori)UT0250600 -1.320800   0.016346 -80.802  < 2e-16 ***
+# as.factor(ori)VA0600100 -1.828375   0.025695 -71.158  < 2e-16 ***
+# as.factor(ori)WV0060200 -1.038997   0.014618 -71.078  < 2e-16 ***
+# as.factor(ori)WV0310100 -1.809071   0.025507 -70.926  < 2e-16 ***
+# as.factor(day_of_week)2 -0.206000   0.012970 -15.883  < 2e-16 ***
+# as.factor(day_of_week)3 -0.181655   0.012883 -14.101  < 2e-16 ***
+# as.factor(day_of_week)4 -0.181326   0.012861 -14.099  < 2e-16 ***
+# as.factor(day_of_week)5 -0.150107   0.012745 -11.778  < 2e-16 ***
+# as.factor(day_of_week)6 -0.089824   0.012468  -7.205 5.82e-13 ***
+# as.factor(day_of_week)7  0.054816   0.012398   4.421 9.81e-06 ***
+# as.factor(month)2       -0.042115   0.017918  -2.350  0.01876 *  
+# as.factor(month)3        0.058524   0.017099   3.423  0.00062 ***
+# as.factor(month)4        0.104214   0.016988   6.135 8.54e-10 ***
+# as.factor(month)5        0.122678   0.016858   7.277 3.41e-13 ***
+# as.factor(month)6        0.102446   0.017040   6.012 1.83e-09 ***
+# as.factor(month)7        0.139607   0.016731   8.344  < 2e-16 ***
+# as.factor(month)8        0.101819   0.016895   6.027 1.67e-09 ***
+# as.factor(month)9        0.132149   0.017248   7.662 1.84e-14 ***
+# as.factor(month)10       0.090118   0.017227   5.231 1.68e-07 ***
+# as.factor(month)11       0.015721   0.017637   0.891  0.37272    
+# as.factor(month)12      -0.037816   0.017860  -2.117  0.03423 *  
+# as.factor(year)2001      0.009747   0.012265   0.795  0.42677    
+# as.factor(year)2002      0.022988   0.012069   1.905  0.05681 .  
+# as.factor(year)2003     -0.027642   0.012328  -2.242  0.02494 *  
+# as.factor(year)2004      0.005099   0.012073   0.422  0.67281    
+# as.factor(year)2005      0.012574   0.012066   1.042  0.29739    
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# (Dispersion parameter for Negative Binomial(75.4989) family taken to be 1)
+
+#     Null deviance: 52337  on 20180  degrees of freedom
+# Residual deviance: 16606  on 20143  degrees of freedom
+# AIC: 79767
+
+# Number of Fisher Scoring iterations: 1
+
+
+#               Theta:  75.5 
+#           Std. Err.:  10.7 
+
+#  2 x log-likelihood:  -79689.04 
+ 
+( exp(coef(mod_a2)[2]) - 1) * 100
+# home_game
+#  1.337914 
+ 
+# Linear Regression by Vandalism
+mod_v <- lm(number_of_offenses ~ home_game + away_game + as.factor(ori) + as.factor(day_of_week) + as.factor(month) + as.factor(year),
+data = model_data_vandalism)
+ 
+summary(mod_v)
+
+# Residuals:
+#     Min      1Q  Median      3Q     Max 
+# -14.554  -1.517  -0.354   1.065  68.139 
+
+# Coefficients:
+#                           Estimate Std. Error  t value Pr(>|t|)    
+# (Intercept)              16.190292   0.124608  129.930  < 2e-16 ***
+# home_game                 0.931266   0.197074    4.725 2.31e-06 ***
+# away_game                 0.363135   0.249279    1.457  0.14520    
+# as.factor(ori)IA0850100 -13.884751   0.105599 -131.486  < 2e-16 ***
+# as.factor(ori)ID0010100  -9.614388   0.098921  -97.193  < 2e-16 ***
+# as.factor(ori)ID0290500 -15.033226   0.128120 -117.337  < 2e-16 ***
+# as.factor(ori)KS0230100 -11.484507   0.111206 -103.272  < 2e-16 ***
+# as.factor(ori)MI3336400 -14.223709   0.108715 -130.834  < 2e-16 ***
+# as.factor(ori)MI3759900 -14.725179   0.118149 -124.633  < 2e-16 ***
+# as.factor(ori)MI3949900 -11.865551   0.100443 -118.133  < 2e-16 ***
+# as.factor(ori)OH0050100 -14.892507   0.186681  -79.775  < 2e-16 ***
+# as.factor(ori)TN0750100 -13.107850   0.100911 -129.895  < 2e-16 ***
+# as.factor(ori)UT0250600 -13.549547   0.101788 -133.116  < 2e-16 ***
+# as.factor(ori)VA0600100 -14.510919   0.112984 -128.433  < 2e-16 ***
+# as.factor(ori)WV0060200 -12.997664   0.102769 -126.475  < 2e-16 ***
+# as.factor(ori)WV0310100 -13.832664   0.106737 -129.595  < 2e-16 ***
+# as.factor(day_of_week)2  -0.460545   0.081138   -5.676 1.40e-08 ***
+# as.factor(day_of_week)3  -0.683425   0.082249   -8.309  < 2e-16 ***
+# as.factor(day_of_week)4  -0.648031   0.081565   -7.945 2.03e-15 ***
+# as.factor(day_of_week)5  -0.558504   0.081216   -6.877 6.28e-12 ***
+# as.factor(day_of_week)6   0.661499   0.079932    8.276  < 2e-16 ***
+# as.factor(day_of_week)7   0.770982   0.082104    9.390  < 2e-16 ***
+# as.factor(month)2        -0.071526   0.110423   -0.648  0.51716    
+# as.factor(month)3         0.520427   0.107257    4.852 1.23e-06 ***
+# as.factor(month)4         0.748336   0.106312    7.039 1.99e-12 ***
+# as.factor(month)5         0.831986   0.106909    7.782 7.43e-15 ***
+# as.factor(month)6         0.963270   0.107638    8.949  < 2e-16 ***
+# as.factor(month)7         1.156924   0.106044   10.910  < 2e-16 ***
+# as.factor(month)8         0.795580   0.106845    7.446 9.96e-14 ***
+# as.factor(month)9         0.743351   0.108530    6.849 7.61e-12 ***
+# as.factor(month)10        0.954886   0.107615    8.873  < 2e-16 ***
+# as.factor(month)11        0.671902   0.108197    6.210 5.39e-10 ***
+# as.factor(month)12        0.009619   0.109903    0.088  0.93025    
+# as.factor(year)2001      -0.209304   0.079074   -2.647  0.00813 ** 
+# as.factor(year)2002      -0.248309   0.077335   -3.211  0.00133 ** 
+# as.factor(year)2003      -0.078812   0.077716   -1.014  0.31055    
+# as.factor(year)2004      -0.358148   0.077458   -4.624 3.79e-06 ***
+# as.factor(year)2005      -0.376959   0.077077   -4.891 1.01e-06 ***
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# Residual standard error: 3.271 on 22464 degrees of freedom
+# Multiple R-squared:  0.6209,    Adjusted R-squared:  0.6203 
+# F-statistic: 994.4 on 37 and 22464 DF,  p-value: < 2.2e-16
+ 
+( exp(coef(mod_v)[2]) - 1) * 100
+# home_game 
+#   153.772 
+ 
+# Negative Binomial Regression by Vandalism
+mod_v2 <- glm.nb(number_of_offenses ~ home_game + away_game + as.factor(ori) + as.factor(day_of_week) + as.factor(month) + as.factor(year),
+data = model_data_vandalism)
+ 
+summary(mod_v2)
+
+# Coefficients:
+#                          Estimate Std. Error  z value Pr(>|z|)    
+# (Intercept)              2.728989   0.020689  131.905  < 2e-16 ***
+# home_game                0.151417   0.033005    4.588 4.48e-06 ***
+# away_game                0.049468   0.041721    1.186 0.235749    
+# as.factor(ori)IA0850100 -1.841709   0.018757  -98.190  < 2e-16 ***
+# as.factor(ori)ID0010100 -0.874000   0.013520  -64.644  < 2e-16 ***
+# as.factor(ori)ID0290500 -2.398458   0.029803  -80.477  < 2e-16 ***
+# as.factor(ori)KS0230100 -1.196994   0.016764  -71.405  < 2e-16 ***
+# as.factor(ori)MI3336400 -1.967221   0.020299  -96.911  < 2e-16 ***
+# as.factor(ori)MI3759900 -2.220720   0.024985  -88.882  < 2e-16 ***
+# as.factor(ori)MI3949900 -1.268834   0.014971  -84.755  < 2e-16 ***
+# as.factor(ori)OH0050100 -2.357093   0.045913  -51.338  < 2e-16 ***
+# as.factor(ori)TN0750100 -1.580761   0.016305  -96.948  < 2e-16 ***
+# as.factor(ori)UT0250600 -1.716640   0.017149 -100.101  < 2e-16 ***
+# as.factor(ori)VA0600100 -2.091109   0.022315  -93.711  < 2e-16 ***
+# as.factor(ori)WV0060200 -1.546121   0.016551  -93.413  < 2e-16 ***
+# as.factor(ori)WV0310100 -1.811991   0.018822  -96.270  < 2e-16 ***
+# as.factor(day_of_week)2 -0.108392   0.014691   -7.378 1.61e-13 ***
+# as.factor(day_of_week)3 -0.166907   0.014987  -11.137  < 2e-16 ***
+# as.factor(day_of_week)4 -0.162612   0.014887  -10.923  < 2e-16 ***
+# as.factor(day_of_week)5 -0.136162   0.014777   -9.215  < 2e-16 ***
+# as.factor(day_of_week)6  0.092779   0.014077    6.591 4.37e-11 ***
+# as.factor(day_of_week)7  0.124321   0.014398    8.635  < 2e-16 ***
+# as.factor(month)2       -0.007774   0.020720   -0.375 0.707508    
+# as.factor(month)3        0.125312   0.019691    6.364 1.97e-10 ***
+# as.factor(month)4        0.165188   0.019514    8.465  < 2e-16 ***
+# as.factor(month)5        0.160470   0.019566    8.201 2.38e-16 ***
+# as.factor(month)6        0.180972   0.019579    9.243  < 2e-16 ***
+# as.factor(month)7        0.224783   0.019212   11.700  < 2e-16 ***
+# as.factor(month)8        0.156730   0.019553    8.016 1.09e-15 ***
+# as.factor(month)9        0.170747   0.019916    8.573  < 2e-16 ***
+# as.factor(month)10       0.211794   0.019606   10.803  < 2e-16 ***
+# as.factor(month)11       0.160206   0.019826    8.081 6.45e-16 ***
+# as.factor(month)12       0.003946   0.020485    0.193 0.847261    
+# as.factor(year)2001     -0.035548   0.014158   -2.511 0.012044 *  
+# as.factor(year)2002     -0.021499   0.013825   -1.555 0.119947    
+# as.factor(year)2003      0.014508   0.013826    1.049 0.294030    
+# as.factor(year)2004     -0.052860   0.013905   -3.802 0.000144 ***
+# as.factor(year)2005     -0.042372   0.013842   -3.061 0.002205 ** 
+# ---
+# Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+# (Dispersion parameter for Negative Binomial(10.506) family taken to be 1)
+
+#     Null deviance: 58287  on 22501  degrees of freedom
+# Residual deviance: 19798  on 22464  degrees of freedom
+# AIC: 95992
+
+# Number of Fisher Scoring iterations: 1
+
+
+#               Theta:  10.506 
+#           Std. Err.:  0.299 
+
+#  2 x log-likelihood:  -95913.837
+ 
+( exp(coef(mod_v2)[2]) - 1 ) * 100
+# home_game 
+#  16.34817 
+```
