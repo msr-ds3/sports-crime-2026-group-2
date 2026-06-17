@@ -24,7 +24,7 @@ batches <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>%
 ```
 
 ```{r}
-cities = c('akron', 'ames', 'ann arbor', 'athens', 'austin', 
+cities <- c('akron', 'ames', 'ann arbor', 'athens', 'austin', 
             'blacksburg', 'boise', 'clemson', 'colorado springs', 
             'columbia', 'columbus', 'denton', 'east lansing', 
             'fayetteville', 'huntington', 'iowa city', 'jonesboro',
@@ -34,7 +34,7 @@ cities = c('akron', 'ames', 'ann arbor', 'athens', 'austin',
 batches_filtered <- batches %>% 
   filter(city_name %in% cities)
 
-oris_per_university = tribble(
+oris_per_university <- tribble(
   ~university, ~city_name, ~ori,
   'the university of akron', 'akron', 'OH0772800',
   'iowa state university', 'ames', 'IA0850100',
@@ -106,7 +106,7 @@ espn2 <- espn2 %>%
 ```
 
 ```{r}
-university_teams = tribble(
+university_teams <- tribble(
   ~university, ~home_team_name,
   'the university of akron', 'Zips',
   'iowa state university', 'Cyclones',
@@ -140,4 +140,167 @@ offenses_filtered2 <- offenses_filtered %>%
   left_join(university_teams, by='university') %>% 
   mutate(year=as.character(year)) %>%
   inner_join(espn2)
+```
+
+```{r}
+# just a way to view the ori, university, and home_team_name mappings
+offenses_filtered2 %>% 
+  select(ori, home_team_name, university) %>%
+  unique()
+```
+
+```{r}
+# community populations and regions 
+regions <- tribble(
+  ~university, ~region, 
+    'the university of akron', 'Midwest',
+  'iowa state university', 'Midwest',
+  'the university of michigan', 'Midwest',
+  'ohio university', 'Midwest', 
+  'the university of texas at austin', 'Southwest',
+  'virginia polytechnic institute and state university', 'Southeast',
+  'boise state university', 'West',
+  'clemson university', 'Southeast',
+  'united states air force academy', 'West',
+  'the university of south carolina', 'Southeast',
+  'the ohio state university', 'Midwest',
+  'the university of north texas', 'Southwest',
+  'michigan state university', 'Midwest',
+  'university of arkansas', 'Southeast',
+  'marshall university', 'southeast',
+  'the university of iowa', 'midwest',
+  'arkansas state university', 'Southeast', 
+  'western michigan university', 'Midwest',
+  'the university of kansas', 'Midwest',
+  'utah state university', 'West', 
+  'texas tech university', 'Southwest',
+  'west virginia university', 'Southeast',
+  'the university of idaho', 'West',
+  'eastern michigan university', 'Midwest',
+  'middle tennessee state university', 'Southeast',
+  'brigham young university', 'West' 
+)
+
+# one way - community population
+table1_data <- offenses_filtered2 %>% 
+  select(year, city_name, university, home_team_name, current_population_1) %>% 
+  group_by(city_name, university, home_team_name) %>% 
+  summarize(mean_pop=mean(current_population_1)) %>%
+  mutate(
+    community_population = case_when(
+      (mean_pop < 50000) ~ '<50000',
+      (mean_pop > 50000 & mean_pop < 100000) ~ '50000-100000',
+      (mean_pop > 100000 & mean_pop < 200000) ~ '100000-200000',
+      (mean_pop > 200000 & mean_pop < 500000) ~ '200000-500000',
+      TRUE ~ '>500000'
+    )
+  ) %>% 
+  left_join(regions, by='university')
+
+# another way - commmunity population
+table1_2_data <- offenses_filtered2 %>% 
+  filter(year == '2005') %>% 
+  select(city_name, university, home_team_name, current_population_1) %>% 
+  unique() %>%
+  mutate(
+    community_population = case_when(
+      (current_population_1 < 50000) ~ '<50000',
+      (current_population_1 > 50000 & current_population_1 < 100000) ~ '50000-100000',
+      (current_population_1 > 100000 & current_population_1 < 200000) ~ '100000-200000',
+      (current_population_1 > 200000 & current_population_1 < 500000) ~ '200000-500000',
+      TRUE ~ '>500000'
+    )
+  ) %>% 
+  left_join(regions, by='university')
+```
+
+```{r}
+# rankings
+
+rankings <- c()
+for (year in years) {
+  i <- year %% 2000 + 1
+  temp <- cfbd_rankings(year = year)
+  rankings[[i]] <- temp %>% 
+    filter(season_type == 'regular') %>% 
+    group_by(school) %>% 
+    mutate(best_rank=min(rank)) %>% 
+    select(school, best_rank)
+}
+
+names(rankings) <- c('2000', '2001', '2002', '2003', '2004', '2005')
+
+rankings_2000_2005 <- bind_rows(rankings, .id='year')
+
+school_name_lookup <- tribble(
+  ~university, ~school,
+  'the university of akron', 'Akron',
+  'iowa state university', 'Iowa State',
+  'the university of michigan', 'Michigan',
+  'ohio university', 'Ohio',
+  'the university of texas at austin', 'Texas',
+  'virginia polytechnic institute and state university', 'Virginia Tech',
+  'boise state university', 'Boise State',
+  'clemson university', 'Clemson',
+  'united states air force academy', 'Air Force',
+  'the university of south carolina', 'South Carolina',
+  'the ohio state university', 'Ohio State',
+  'the university of north texas', 'North Texas',
+  'michigan state university', 'Michigan State',
+  'university of arkansas', 'Arkansas',
+  'marshall university', 'Marshall',
+  'the university of iowa', 'Iowa',
+  'arkansas state university', 'Arkansas State',
+  'western michigan university', 'Western Michigan',
+  'the university of kansas', 'Kansas',
+  'utah state university', 'Utah State',
+  'texas tech university', 'Texas Tech',
+  'west virginia university', 'West Virginia',
+  'the university of idaho', 'Idaho',
+  'eastern michigan university', 'Eastern Michigan',
+  'middle tennessee state university', 'Middle Tennessee',
+  'brigham young university', 'BYU'
+)
+
+# best ranking for each 14 program
+ranking_data <- offenses_filtered2 %>% 
+  select(year, university, home_team_name) %>% 
+  left_join(school_name_lookup, by='university') %>%
+  left_join(rankings_2000_2005, by=c('year', 'school')) %>% 
+  group_by(university, home_team_name) %>% 
+  summarize(rank_category = min(best_rank, na.rm = TRUE), .groups = "drop") %>%
+  mutate(rank_category = if_else(is.infinite(rank_category), NA_real_, rank_category)) %>%
+  mutate(
+    ranking = case_when(
+      (rank_category <= 25) ~ '1-25',
+      (rank_category <= 50) ~ '25-50',
+      (rank_category <= 75) ~ '50-75',
+      (rank_category <= 125) ~ '75-125',
+      TRUE ~ 'Not ranked'
+    )
+  ) %>% 
+  select(university, ranking)
+
+table1_data <- table1_data %>% 
+  left_join(ranking_data)
+```
+
+```{r}
+# venue data
+venues <- cfbd_venues()
+
+all_cities <- offenses_filtered2$city_name %>% unique()
+
+venues_filtered <- venues %>% 
+  mutate(city=tolower(city)) %>% 
+  select(name, capacity, city) %>% 
+  rename(venue_name=name, city_name=city) %>%
+  inner_join(offenses_filtered2, by='city_name') %>% 
+  select(university, home_team_id, city_name, venue_name, capacity) %>% 
+  distinct()
+
+
+venues_filtered %>% 
+  group_by(university) %>% 
+  summarize(count = n())
 ```
