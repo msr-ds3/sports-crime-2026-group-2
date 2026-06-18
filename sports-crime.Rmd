@@ -880,8 +880,7 @@ legal_betting_lookup <- tribble(
   'WA', as.Date('2020-03-25'),
   'WV', as.Date('2018-08-30'),
   'WI', NA, 
-  'WY', as.Date('2021-09-01')
-
+  'WY', as.Date('2021-09-01'
 )
 
 
@@ -891,6 +890,7 @@ legal_betting_lookup <- tribble(
 ```{r}
 # load data
 offense_segment_2015_2024 <- read_csv('offense_segment_2015_2024.csv')
+
 batches_2015_2024 <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>% 
   filter(grepl('201[5-9]|202[0-4]', year))
 
@@ -1009,9 +1009,57 @@ extension_df <- extension_df %>%
   )
 
 # quick sanity check
-test <- temp_df %>% 
+test <- extension_df %>% 
   filter(state_id == 'AR') %>% 
   filter(incident_date <= launch_date) %>% 
   head(n=5)
+
+```
+
+## Plots 
+
+### Plot 1 - 2023 Cross Section
+```{r}
+days2023 <- seq(as.Date('2023-01-01'), as.Date('2023-12-31'))
+extension_2023 <- extension_df %>% 
+  filter(incident_date %in% days2023)
+  
+# plot 1 - assaults
+extension_2023 %>% 
+  filter(offense_type=='assault') %>%
+  mutate(
+    treatment_type = ifelse(treatment == 1, 'Legalized States', 'Never Legalized States')
+  ) %>% 
+  group_by(treatment_type, game_type) %>% 
+  summarize(
+    count = n(),
+    avg=mean(number_of_offenses),
+    se=sd(number_of_offenses)/sqrt(count)
+  ) %>% 
+  ggplot(aes(x=game_type, y=avg, ymin=avg-sd, ymax=avg+sd)) +
+  geom_pointrange() +
+  geom_errorbar() +
+  facet_wrap(~ treatment_type)
+
+# plot 1 - vandalism
+extension_2023 %>% 
+  filter(offense_type=='vandalism') %>%
+  mutate(
+    treatment_type = ifelse(treatment == 1, 'Legalized States', 'Never Legalized States')
+  ) %>% 
+  group_by(treatment_type, game_type) %>% 
+  summarize(
+    count = n(),
+    avg=mean(number_of_offenses),
+    se=sd(number_of_offenses)/sqrt(count)
+  ) %>% 
+  ggplot(aes(x=game_type, y=avg, ymin=avg-sd, ymax=avg+sd)) +
+  geom_pointrange() +
+  geom_errorbar() +
+  facet_wrap(~ treatment_type)
+```
+
+### Plot 2 - Time Series 2017-2023
+```{r}
 
 ```
