@@ -19,6 +19,8 @@ library(here)
 library(scales)
 library(tidyverse)
 library(cfbfastR)
+library(rvest)
+library(stringr)
 ```
 
 ## Load Data
@@ -779,4 +781,13 @@ summary(mod_v2)
 ( exp(coef(mod_v2)[2]) - 1 ) * 100
 # home_game 
 #  16.34817 
+```
+
+# Extension 
+```{r}
+
+# url used: https://www.cbssports.com/betting/news/u-s-sports-betting-where-all-50-states-stand-on-legalizing-online-sports-betting-sites-proposed-legislation/
+
+
+
 ```
