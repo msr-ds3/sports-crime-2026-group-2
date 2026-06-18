@@ -1,6 +1,6 @@
 ---
 title: "Sports Crime 2026 Report"
-author: "Addina Rahaman and Alexie"
+author: "Addina Rahaman and Alexie DaCosta"
 date: '`r Sys.time()`'
 output:
   html_document:
@@ -21,6 +21,7 @@ library(tidyverse)
 library(cfbfastR)
 library(rvest)
 library(stringr)
+library(broom)
 ```
 
 ## Load Data
@@ -783,11 +784,84 @@ summary(mod_v2)
 #  16.34817 
 ```
 
+### Graphing Regression Outputs
+```{r}
+coef_df <- bind_rows(
+  tidy(mod2, conf.int = TRUE) %>%
+    filter(term == "home_game") %>%
+    mutate(model = "Overall"),
+
+  tidy(mod_a2, conf.int = TRUE) %>%
+    filter(term == "home_game") %>%
+    mutate(model = "Assault"),
+
+  tidy(mod_v2, conf.int = TRUE) %>%
+    filter(term == "home_game") %>%
+    mutate(model = "Vandalism")
+) %>%
+  mutate(
+    pct_effect = (exp(estimate) - 1) * 100,
+    pct_low = (exp(conf.low) - 1) * 100,
+    pct_high = (exp(conf.high) - 1) * 100
+  )
+
+ggplot(coef_df,
+       aes(x = model, y = pct_effect)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymin = pct_low,
+                    ymax = pct_high),
+                width = .15) +
+  geom_hline(yintercept = 0,
+             linetype = "dashed") +
+  labs(
+    x = "",
+    y = "Percent Change in Offenses",
+    title = "Estimated Home Game Effect"
+  ) +
+  theme_minimal()
+```
+
 # Extension 
 ```{r}
 
 # url used: https://www.cbssports.com/betting/news/u-s-sports-betting-where-all-50-states-stand-on-legalizing-online-sports-betting-sites-proposed-legislation/
 
+legal_betting_lookup <- tribble(
+  ~state, ~lauch_date,
+  'AL', NA,
+  'AK', NA, 
+  'AZ', as.Date('2021-04-15'),
+  'AR', as.Date('2022-03-04'),
+  'CA', NA,
+  'CO', as.Date('2020-05-01'),
+  'CT', as.Date('2021-10-19'),
+  'DE', as.Date('2023-12-26'),
+  'FL', as.Date('2023-11-07'),
+  'GA', NA, 
+  'HI', NA, 
+  'ID', NA,
+  'IL', as.Date('2020-06-20'),
+  'IN', as.Date('2019-09-01'),
+  'IA', as.Date('2019-08-15'),
+  'KS', as.Date('2022-09-01'),
+  'KY', as.Date('2023-09-28'),
+  'LA', as.Date('2022-01-28'),
+  'ME', as.Date('2023-11-03'),
+  'MD', as.Date('2022-11-23'),
+  'MA', as.Date('2023-03-10'),
+  'MI', as.Date('2021-01-22'),
+  'MN', NA,
+  'MS', NA,
+  'MO', NA, # legalized after 2024
+  'MT', as.Date('2020-03-01')
 
+)
+
+
+```
+
+```{r}
+offense_2024 <- read_csv('nibrs_offense_segment_2024.csv')
+game_schedule_2024 <- espn_cfb_schedule(year=2024)
 
 ```
