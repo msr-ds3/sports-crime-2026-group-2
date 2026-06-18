@@ -1025,13 +1025,11 @@ days2024 <- seq(as.Date('2024-01-01'), as.Date('2024-12-31'))
 extension_2024 <- extension_df %>% 
   filter(incident_date %in% days2024)
   
-# plot 1 - assaults
 extension_2024 %>% 
-  filter(offense_type=='assault') %>%
   mutate(
     treatment_type = ifelse(treatment == 1, 'Legalized States', 'Never Legalized States')
   ) %>% 
-  group_by(treatment_type, game_type) %>% 
+  group_by(offense_type, treatment_type, game_type) %>% 
   summarize(
     count = n(),
     avg=mean(number_of_offenses),
@@ -1040,33 +1038,11 @@ extension_2024 %>%
   ggplot(aes(x=game_type, y=avg, ymin=avg-se, ymax=avg+se)) +
   geom_pointrange() +
   geom_errorbar() +
-  facet_wrap(~ treatment_type) + 
+  facet_wrap(offense_type ~ treatment_type) + 
   labs(
     x = 'Game Type',
     y = 'Number of Assault Reports',
     title = 'Mean Assaults Reports for No Game Days and Home Game Days Based on Legalized Betting in 2024'
-  )
-
-# plot 1 - vandalism
-extension_2024 %>% 
-  filter(offense_type=='vandalism') %>%
-  mutate(
-    treatment_type = ifelse(treatment == 1, 'Legalized States', 'Never Legalized States')
-  ) %>% 
-  group_by(treatment_type, game_type) %>% 
-  summarize(
-    count = n(),
-    avg=mean(number_of_offenses),
-    se=sd(number_of_offenses)/sqrt(count)
-  ) %>% 
-  ggplot(aes(x=game_type, y=avg, ymin=avg-se, ymax=avg+se)) +
-  geom_pointrange() +
-  geom_errorbar() +
-  facet_wrap(~ treatment_type) + 
-  labs(
-    x = 'Game Type',
-    y = 'Number of Daily Vandalism Reports',
-    title = 'Mean Daily Vandalism Reports for No Game Days and Home Game Days Based on Legalized Betting in 2024'
   )
 
 ```
