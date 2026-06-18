@@ -21,6 +21,7 @@ library(tidyverse)
 library(cfbfastR)
 library(broom)
 library(stringr)
+library(lubridate)
 ```
 
 ## Load Data
@@ -880,7 +881,7 @@ legal_betting_lookup <- tribble(
   'WA', as.Date('2020-03-25'),
   'WV', as.Date('2018-08-30'),
   'WI', NA, 
-  'WY', as.Date('2021-09-01'
+  'WY', as.Date('2021-09-01')
 )
 
 
@@ -1064,14 +1065,63 @@ extension_2024 %>%
   facet_wrap(~ treatment_type) + 
   labs(
     x = 'Game Type',
-    y = 'Number of Vandalism Reports',
-    title = 'Mean Vandalism Reports for No Game Days and Home Game Days Based on Legalized Betting in 2024'
+    y = 'Number of Daily Vandalism Reports',
+    title = 'Mean Daily Vandalism Reports for No Game Days and Home Game Days Based on Legalized Betting in 2024'
   )
 
 ```
 
 ### Plot 2 - Time Series 2015-2024
 ```{r}
+treatment_df <- extension_df %>% 
+  filter(treatment == 1)
 
+treatment_states <- unique(treatment_df$state_id) 
+
+num_states <- 1:7 
+names(num_states) <- treatment_states
+launch_years <- c()
+
+for (state in treatment_states) {
+  i <- num_states[state]
+  launch_year <- treatment_df %>% 
+    filter(state_id == state) %>% 
+    mutate(legal_betting_year = year(launch_date)) %>% 
+    pull(legal_betting_year)
+
+  launch_years[i] <- launch_year[1]
+}
+
+names(launch_years) <- treatment_states
+launch_years_df <- enframe(launch_years, name = "state_id", value = "xintercept")
+
+
+treatment_df %>% 
+  mutate(year = year(incident_date)) %>%
+  group_by(year, offense_type, game_type) %>% 
+  summarize(
+    avg_offenses=mean(number_of_offenses),
+    .groups = "drop"
+  ) %>% 
+  pivot_wider(
+    names_from=game_type,
+    values_from=avg_offenses
+  ) %>% 
+  mutate(
+    premium=home_game-no_game
+  ) %>% 
+  ggplot(aes(x=year, y=premium, color=offense_type)) + 
+  geom_line() + 
+  geom_vline(
+    data = launch_years_df, 
+    aes(xintercept = xintercept), 
+    linetype = 'dashed'
+  ) + 
+  labs(
+    title="Premium in Assaults and Vandalism from 2015-2024 by States of Interest",
+    x='Years',
+    y='Premium'
+  ) +
+  facet_wrap(~ state_id)
 
 ```
