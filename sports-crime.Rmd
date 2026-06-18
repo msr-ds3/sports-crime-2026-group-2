@@ -1041,8 +1041,8 @@ extension_2024 %>%
   facet_wrap(offense_type ~ treatment_type) + 
   labs(
     x = 'Game Type',
-    y = 'Number of Assault Reports',
-    title = 'Mean Assaults Reports for No Game Days and Home Game Days Based on Legalized Betting in 2024'
+    y = 'Number of Offense Reports',
+    title = 'Mean Offense Reports for No Game Days and Home Game Days Based on Legalized Betting in 2024'
   )
 
 ```
