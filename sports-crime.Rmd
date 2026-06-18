@@ -19,9 +19,8 @@ library(here)
 library(scales)
 library(tidyverse)
 library(cfbfastR)
-library(rvest)
-library(stringr)
 library(broom)
+library(stringr)
 ```
 
 ## Load Data
@@ -822,6 +821,10 @@ ggplot(coef_df,
 ```
 
 # Extension 
+
+## Data Organization
+
+### Legal Betting Lookup Table
 ```{r}
 
 # url used: https://www.cbssports.com/betting/news/u-s-sports-betting-where-all-50-states-stand-on-legalizing-online-sports-betting-sites-proposed-legislation/
@@ -860,8 +863,60 @@ legal_betting_lookup <- tribble(
 
 ```
 
+### Replicate Earlier Table for 2015-2024
 ```{r}
-offense_2024 <- read_csv('nibrs_offense_segment_2024.csv')
-game_schedule_2024 <- espn_cfb_schedule(year=2024)
+# load data
+offense_segment_2015_2024 <- read_csv('offense_segment_2015_2024.csv')
+batches_2015_2024 <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>% 
+  filter(grepl('201[5-9]|202[0-4]', year))
+
+extension_years <- 2015:2024
+game_schedule_2015_2024_raw <- c()
+
+for (year in extension_years) {
+  i = year %% 2015 + 1
+  game_schedule_2015_2024_raw[[i]] = espn_cfb_schedule(
+    year = year
+  )
+}
+
+names(game_schedule_2015_2024_raw) = c('2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024')
+
+game_schedule_2015_2024 <- bind_rows(game_schedule_2015_2024_raw, .id='year')
+
+game_schedule_2015_2024 <- game_schedule_2015_2024 %>% 
+  mutate(
+    home_team_name = case_when(
+      home_team_id == "2711" ~ "Broncos2", # Boise and western michigan have the same team name so im replacing western michigan with Broncos2
+      TRUE ~ home_team_name
+    )
+  )
+
+gs_2023 <- espn_cfb_schedule(year=2023)
+gs_2023 <- gs_2023 %>% 
+  mutate(
+    year='2023'
+  )
+gs_2024 <- espn_cfb_schedule(year=2024)
+gs_2024 <- gs_2024 %>% 
+  mutate(
+    year='2024'
+  )
+
+# brute forcing 2023 and 2024 because they were having problems
+game_schedule_2015_2024 <- bind_rows(game_schedule_2015_2024, gs_2023, gs_2024)
+```
+
+```{r}
+# clean data for only programs of interest
+university_ori_state_lookup <- university_ori_lookup %>% 
+  mutate(state=str_sub(ori, 1, 2))
+
+```
+
+```{r}
+# clean offense data
+
+
 
 ```
