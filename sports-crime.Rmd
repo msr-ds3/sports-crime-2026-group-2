@@ -830,7 +830,7 @@ ggplot(coef_df,
 # url used: https://www.cbssports.com/betting/news/u-s-sports-betting-where-all-50-states-stand-on-legalizing-online-sports-betting-sites-proposed-legislation/
 
 legal_betting_lookup <- tribble(
-  ~state_id, ~lauch_date,
+  ~state_id, ~launch_date,
   'AL', NA,
   'AK', NA, 
   'AZ', as.Date('2021-09-09'),
@@ -993,3 +993,25 @@ agency_offenses_and_games_2015_2024 <- agency_days_and_programs_2015_2024 %>%
 
 ```
 
+```{r}
+# add a legal_betting column and treatement column
+extension_df <- agency_offenses_and_games_2015_2024
+
+extension_df <- extension_df %>% 
+  left_join(legal_betting_lookup, by='state_id') %>% 
+  mutate(
+    legal_betting = case_when(
+      (is.na(launch_date)) ~ 0,
+      (incident_date >= launch_date) ~ 1, 
+      TRUE ~ 0
+    ),
+    treatment = ifelse(is.na(launch_date), 0, 1)
+  )
+
+# quick sanity check
+test <- temp_df %>% 
+  filter(state_id == 'AR') %>% 
+  filter(incident_date <= launch_date) %>% 
+  head(n=5)
+
+```
