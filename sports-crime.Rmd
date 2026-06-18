@@ -833,7 +833,7 @@ legal_betting_lookup <- tribble(
   ~state, ~lauch_date,
   'AL', NA,
   'AK', NA, 
-  'AZ', as.Date('2021-04-15'),
+  'AZ', as.Date('2021-09-09'),
   'AR', as.Date('2022-03-04'),
   'CA', NA,
   'CO', as.Date('2020-05-01'),
@@ -843,7 +843,7 @@ legal_betting_lookup <- tribble(
   'GA', NA, 
   'HI', NA, 
   'ID', NA,
-  'IL', as.Date('2020-06-20'),
+  'IL', as.Date('2020-06-18'),
   'IN', as.Date('2019-09-01'),
   'IA', as.Date('2019-08-15'),
   'KS', as.Date('2022-09-01'),
@@ -857,6 +857,30 @@ legal_betting_lookup <- tribble(
   'MS', NA,
   'MO', NA, # legalized after 2024
   'MT', as.Date('2020-03-01')
+  'NE', NA,
+  'NV', as.Date('2010-01-01'),
+  'NH', NA,
+  'NJ', NA,
+  'NM', NA,
+  'NY', NA,
+  'NC', as.Date('2024-3-11'),
+  'ND', NA,
+  'OH', as.Date('2023-01-01')
+  'OK', NA,
+  'OR', NA,
+  'PA', as.Date('2019-05-01')
+  'RI', NA, 
+  'SC', NA,
+  'SD', NA,
+  'TN', NA, 
+  'TX', NA,
+  'UT', NA, 
+  'VT', as.Date('2024-01-11'),
+  'VA', NA,
+  'WA', as.Date('2020-03-25')
+  'WV', as.Date('2018-08-30')
+  'WI', NA, 
+  'WY', as.Date('2021-09-01')
 
 )
 
