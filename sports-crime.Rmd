@@ -830,7 +830,7 @@ ggplot(coef_df,
 # url used: https://www.cbssports.com/betting/news/u-s-sports-betting-where-all-50-states-stand-on-legalizing-online-sports-betting-sites-proposed-legislation/
 
 legal_betting_lookup <- tribble(
-  ~state, ~lauch_date,
+  ~state_id, ~lauch_date,
   'AL', NA,
   'AK', NA, 
   'AZ', as.Date('2021-09-09'),
@@ -856,7 +856,7 @@ legal_betting_lookup <- tribble(
   'MN', NA,
   'MS', NA,
   'MO', NA, # legalized after 2024
-  'MT', as.Date('2020-03-01')
+  'MT', as.Date('2020-03-01'),
   'NE', NA,
   'NV', as.Date('2010-01-01'),
   'NH', NA,
@@ -865,10 +865,10 @@ legal_betting_lookup <- tribble(
   'NY', NA,
   'NC', as.Date('2024-3-11'),
   'ND', NA,
-  'OH', as.Date('2023-01-01')
+  'OH', as.Date('2023-01-01'),
   'OK', NA,
   'OR', NA,
-  'PA', as.Date('2019-05-01')
+  'PA', as.Date('2019-05-01'),
   'RI', NA, 
   'SC', NA,
   'SD', NA,
@@ -877,8 +877,8 @@ legal_betting_lookup <- tribble(
   'UT', NA, 
   'VT', as.Date('2024-01-11'),
   'VA', NA,
-  'WA', as.Date('2020-03-25')
-  'WV', as.Date('2018-08-30')
+  'WA', as.Date('2020-03-25'),
+  'WV', as.Date('2018-08-30'),
   'WI', NA, 
   'WY', as.Date('2021-09-01')
 
@@ -934,13 +934,62 @@ game_schedule_2015_2024 <- bind_rows(game_schedule_2015_2024, gs_2023, gs_2024)
 ```{r}
 # clean data for only programs of interest
 university_ori_state_lookup <- university_ori_lookup %>% 
-  mutate(state=str_sub(ori, 1, 2))
+  mutate(state_id=str_sub(ori, 1, 2))
+
+batches_2015_2024_filtered <- university_ori_state_lookup %>% 
+  left_join(batches_2015_2024, by=c('ori', 'city_name'))
+
+offenses_2015_2024_filtered <- batches_2015_2024_filtered %>% 
+  left_join(offense_segment_2015_2024)
+
+# filter out assault and vandalism 
+offenses_2015_2024_filtered <- offenses_2015_2024_filtered %>% 
+  filter(grepl('assault|vandalism', ucr_offense_code, ignore.case=TRUE)) %>% 
+  mutate(
+    offense_type = case_when(
+      (grepl('assault', ucr_offense_code)) ~ 'assault',
+      (grepl('vandalism', ucr_offense_code)) ~ 'vandalism'
+    )
+  )
 
 ```
 
 ```{r}
-# clean offense data
+# aggregate data 
 
+agency_days_2015_2024 <- offenses_2015_2024_filtered %>% 
+  filter((grepl('^201[5-9]-|202[0-4]-', incident_date))) %>%
+  group_by(university, ori, incident_date, offense_type) %>%
+  summarize(
+    number_of_offenses=n()
+  ) 
 
+game_schedule_2015_2024_filtered <- game_schedule_2015_2024 %>% 
+  select(year, matchup, season, game_date, home_team_name, away_team_name)
+
+agency_days_and_programs_2015_2024 <- agency_days_2015_2024 %>% 
+  left_join(university_team_lookup)
+
+agency_offenses_and_games_2015_2024 <- agency_days_and_programs_2015_2024 %>% 
+  left_join(game_schedule_2015_2024_filtered, by=c('incident_date' = 'game_date')) %>% 
+  mutate(
+    game_type = case_when(
+      (team_name == home_team_name) ~ 'home_game',
+      (team_name == away_team_name) ~ 'away_game',
+      TRUE ~ 'No game' # since we joined only by incident date and game date, it could be possible that neither home_team_name or away_team_name corresponds with team_name. in that case, the team was not involved at all
+    )
+  ) %>% 
+  group_by(ori, incident_date, offense_type, number_of_offenses) %>% 
+  summarize(
+    actual_game_type = if (any(game_type == 'home_game')) { 'home_game' } 
+                      else if (any(game_type == 'away_game')) { 'away_game' }
+                      else { 'no_game' }
+  ) %>% 
+  rename(game_type=actual_game_type) %>% 
+  filter(game_type != 'away_game') %>% 
+   mutate(
+    state_id=str_sub(ori, 1, 2)
+  )
 
 ```
+
