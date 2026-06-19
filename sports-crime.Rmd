@@ -882,6 +882,8 @@ legal_betting_lookup <- tribble(
   'WV', as.Date('2018-08-30'),
   'WI', NA, 
   'WY', as.Date('2021-09-01')
+
+  'WY', as.Date('2021-09-01')
 )
 
 
@@ -891,7 +893,6 @@ legal_betting_lookup <- tribble(
 ```{r}
 # load data
 offense_segment_2015_2024 <- read_csv('offense_segment_2015_2024.csv')
-
 batches_2015_2024 <- read_csv(here('nibrs_batch_header_1991_2024.csv')) %>% 
   filter(grepl('201[5-9]|202[0-4]', year))
 
@@ -1010,17 +1011,32 @@ extension_df <- extension_df %>%
   )
 
 # quick sanity check
-test <- extension_df %>% 
+test <- temp_df %>% 
   filter(state_id == 'AR') %>% 
   filter(incident_date <= launch_date) %>% 
   head(n=5)
 
 ```
 
-## Plots 
-
-### Plot 1 - 2023 Cross Section
+### Feature Engineering for Extension Data 
 ```{r}
+ 
+# Hot Encode Game Type
+factors <- model.matrix(~ game_type - 1, data = extension_df)
+colnames(factors) <- sub("^game_type", "", colnames(factors))
+ 
+# Horizontally stack data back to df
+model_data <- bind_cols(extension_df, factors)
+ 
+# Add features
+model_data <- model_data %>%
+mutate(
+  day_of_week = wday(incident_date),
+  month = month(incident_date),
+  year = year(incident_date)
+)
+
+factors(extension_df$game_type)
 days2024 <- seq(as.Date('2024-01-01'), as.Date('2024-12-31'))
 extension_2024 <- extension_df %>% 
   filter(incident_date %in% days2024)
@@ -1100,4 +1116,67 @@ treatment_df %>%
   ) +
   facet_wrap(~ state_id)
 
+```
+
+### Extension Data: Feature Engineering for Regression Model
+```{r}
+# Hot Encode Game Type
+factors <- model.matrix(~ game_type - 1, data = extension_df)
+colnames(factors) <- sub("^game_type", "", colnames(factors))
+ 
+# Horizontally stack data back to df
+ext_model_data <- bind_cols(extension_df, factors)
+ 
+# Add features
+ext_model_data <- ext_model_data %>%
+mutate(
+  day_of_week = wday(incident_date),
+  month = month(incident_date),
+  year = year(incident_date)
+)
+
+# Hot Encode ORI and Calendar Features
+ext_model_data$ori <- factor(ext_model_data$ori)
+ext_model_data$day_of_week <- factor(ext_model_data$day_of_week)
+ext_model_data$month <- factor(ext_model_data$month)
+ext_model_data$year <- factor(ext_model_data$year)
+
+```
+
+### Predictive Modeling for Extension Data 
+```{r}
+
+
+extension_model <- lm(number_of_offenses ~  + home_game + legal_betting + home_game:legal_betting + 
+ori + day_of_week + month + year,
+data = ext_model_data)
+
+summary(extension_model)
+
+b <- tail(coef(extension_model), 1)
+
+pct_change <- (exp(b) - 1) * 100
+```
+
+```{r}
+library(ggeffects)
+
+pred <- ggpredict(
+  extension_model,
+  terms = c("legal_betting", "home_game")
+)
+
+pred$group <- factor(
+  pred$group,
+  levels = c("0", "1"),
+  labels = c("No", "Yes")
+)
+
+plot(pred) +
+  labs(
+    title = "Predicted Offenses by Legalized Betting and Home Game Status",
+    x = "Legalized Betting",
+    y = "Predicted Number of Offenses",
+    color = "Home Game"
+  ) 
 ```
