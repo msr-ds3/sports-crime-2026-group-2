@@ -1167,7 +1167,7 @@ pred <- ggpredict(
 )
 
 pred$group <- factor(
-  pred$group,
+  pred$group,ss
   levels = c("0", "1"),
   labels = c("No", "Yes")
 )
